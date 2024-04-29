@@ -1,0 +1,12 @@
+{
+	"inputContent": "请输入内容",
+	"messageNotEntered": "未输入讯息",
+	"failedToModify": "修改失败!!你没写字",
+	"toDoList": "待办事项清单",
+	"join": "加入",
+	"title": "标题",
+	"language_switch": "语系切换",
+	"sc": "简中",
+	"tc": "繁中",
+	"en": "英文"
+}
