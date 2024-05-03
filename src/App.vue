@@ -13,11 +13,20 @@
 				<a-input v-model:value="inputVal" :placeholder="$t('inputContent')" />
 				<a-button class="shadow-lg border-transparent" @click="joinList">{{ $t('join') }}</a-button>
 			</div>
-			<div class="flex my-[10px] flex-col flex-grow">
-				<div class="flex p-2 shadow-lg rounded-xl gap-1 items-center min-w-[275px] mx-3 my-1 overflow-auto" v-for="(item, index) in toDoList" :key="index">
-					<a-input class="p-[5px] truncate" :bordered="false" :value="item.name" :readonly="!item.edit" @input="handleInput(item, $event)" />
-					<font-awesome-icon class="cursor-pointer text-gray-500" :icon="item.edit ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-pen-to-square'" @click="edit(item)" />
-					<font-awesome-icon class="cursor-pointer text-gray-500" icon="fa-solid fa-trash" @click="deleteItem(item)" />
+			<div class="overflow-auto flex-grow flex flex-col" :class="{ 'justify-center': toDoList.length === 0 }">
+				<div v-if="toDoList.length !== 0" class="my-[10px]">
+					<div class="flex p-2 shadow-lg rounded-xl gap-1 items-center min-w-[275px] mx-3 my-3 bg-white" v-for="(item, index) in toDoList" :key="index">
+						<a-input class="p-[5px] truncate" :bordered="false" :value="item.name" :readonly="!item.edit" @input="handleInput(item, $event)" />
+						<font-awesome-icon class="cursor-pointer text-gray-500" :icon="item.edit ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-pen-to-square'" @click="edit(item)" />
+						<font-awesome-icon class="cursor-pointer text-gray-500" icon="fa-solid fa-trash" @click="deleteItem(item)" />
+					</div>
+				</div>
+				<div v-else>
+					<a-empty>
+						<template #description>
+							<span> {{ $t('noData') }} </span>
+						</template>
+					</a-empty>
 				</div>
 			</div>
 		</div>
@@ -33,8 +42,8 @@ const langSelect = computed(() => [
 	{ lang: i18n.global.t('tc'), val: 'zh_TW' },
 	{ lang: i18n.global.t('sc'), val: 'zh_CN' }
 ]);
-const langValue = ref(getLangValue());
-function getLangValue() {
+//偵測語系
+const getLangValue = () => {
 	const lang = document.body.lang;
 	// 遍历 langSelect 数组，寻找匹配的语言选项
 	for (let i = 0; i < langSelect.value.length; i++) {
@@ -42,7 +51,9 @@ function getLangValue() {
 			return langSelect.value[i].val;
 		}
 	}
-}
+};
+const langValue = ref(getLangValue());
+//取得資料
 const getList = () => {
 	const toDoListString = localStorage.getItem('toDoList');
 	if (!toDoListString) {
@@ -52,6 +63,7 @@ const getList = () => {
 	}
 };
 getList();
+
 const joinList = () => {
 	if (inputVal.value.trim() === '') {
 		let message = i18n.global.t('messageNotEntered');
@@ -74,6 +86,7 @@ const joinList = () => {
 };
 const deleteItem = (item) => {
 	toDoList.value = toDoList.value.filter((e, index) => item.key !== index); //剔除掉item.key===index的物件，也就是自己
+	toDoList.value.forEach((e, index) => (e.key = index));
 	const toDoListString = JSON.stringify(toDoList.value);
 	localStorage.setItem('toDoList', toDoListString);
 };
