@@ -15,7 +15,7 @@
 			</div>
 			<div class="flex my-[10px] flex-col flex-grow">
 				<div class="flex p-2 shadow-lg rounded-xl gap-1 items-center min-w-[275px] mx-3 my-1 overflow-auto" v-for="(item, index) in toDoList" :key="index">
-					<a-input class="p-[5px]" :bordered="false" :value="item.name" :readonly="!item.edit" @input="handleInput(item, $event)" />
+					<a-input class="p-[5px] truncate" :bordered="false" :value="item.name" :readonly="!item.edit" @input="handleInput(item, $event)" />
 					<font-awesome-icon class="cursor-pointer text-gray-500" :icon="item.edit ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-pen-to-square'" @click="edit(item)" />
 					<font-awesome-icon class="cursor-pointer text-gray-500" icon="fa-solid fa-trash" @click="deleteItem(item)" />
 				</div>
