@@ -25,7 +25,7 @@
 						</div>
 					</transition-group>
 				</div>
-				<div v-else>
+				<div v-if="toDoList.length === 1">
 					<a-empty>
 						<template #description>
 							<span> {{ $t('noData') }} </span>
