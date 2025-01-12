@@ -18,7 +18,7 @@
 					<transition-group name="list">
 						<div v-for="item in toDoList" :key="item.key">
 							<div class="flex p-2 shadow-lg rounded-xl gap-1 items-center min-w-[275px] mx-3 my-3 bg-white" v-if="item.key !== -1">
-								<a-input class="p-[5px] truncate" :bordered="false" :value="item.name" :readonly="!item.edit" @input="handleInput(item, $event)" />
+								<a-input class="p-[5px] truncate" :bordered="false" v-model:value="item.name" :readonly="!item.edit" />
 								<font-awesome-icon class="cursor-pointer text-gray-500" :icon="item.edit ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-pen-to-square'" @click="edit(item)" />
 								<font-awesome-icon class="cursor-pointer text-gray-500" icon="fa-solid fa-trash" @click="deleteItem(item)" />
 							</div>
@@ -36,11 +36,12 @@
 		</div>
 	</a-config-provider>
 </template>
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue';
 import { i18n } from '@/utils/i18n';
-const inputVal = ref('');
-const toDoList = ref([]);
+import type { ToDoItem } from '@/type/type';
+const inputVal = ref<string>('');
+const toDoList = ref<Array<ToDoItem>>([]);
 const langSelect = computed(() => [
 	{ lang: i18n.global.t('en'), val: 'en' },
 	{ lang: i18n.global.t('tc'), val: 'zh_TW' },
@@ -58,78 +59,37 @@ const getLangValue = () => {
 };
 const langValue = ref(getLangValue());
 //取得資料
-const getList = () => {
-	const toDoListString = localStorage.getItem('toDoList');
-	if (!toDoListString) {
-		toDoList.value = [];
-	} else {
-		toDoList.value = JSON.parse(toDoListString);
-	}
-	if (toDoList.value.length === 0) {
-		toDoList.value.push({
-			name: '',
-			edit: false,
-			key: -1 // 或者使用一個負數作為占位元素的 key
-		});
-	}
-};
-getList();
+const getList = () => (toDoList.value = JSON.parse(localStorage.getItem('toDoList') || '[]')).length || toDoList.value.push({ name: '', edit: false, key: -1 });
+//加入資料
 const joinList = () => {
-	if (inputVal.value.trim() === '') {
-		let message = i18n.global.t('messageNotEntered');
-		alert(message);
-		console.log(toDoList.value.length);
-		return;
-	} else {
-		// 找到最大的 key 值
-		let maxKey = 0;
-		toDoList.value.forEach((item) => {
-			if (item.key > maxKey) {
-				maxKey = item.key;
-			}
-		});
-		toDoList.value.unshift({
-			name: inputVal.value.trim(),
-			edit: false,
-			key: maxKey + 1
-		});
-		toDoList.value.forEach((item, index) => {
-			item.edit = false;
-		});
-		const toDoListString = JSON.stringify(toDoList.value);
-		localStorage.setItem('toDoList', toDoListString);
-		inputVal.value = '';
+	const name = inputVal.value.trim();
+	if (!name) {
+		return alert(i18n.global.t('messageNotEntered'));
 	}
+	const maxKey = Math.max(0, ...toDoList.value.map((item) => item.key));
+	toDoList.value = [{ name, edit: false, key: maxKey + 1 }, ...toDoList.value.map((item) => ({ ...item, edit: false }))];
+	localStorage.setItem('toDoList', JSON.stringify(toDoList.value));
+	inputVal.value = '';
 };
-const deleteItem = (item) => {
-	toDoList.value = toDoList.value.filter((e) => item.key !== e.key); //剔除掉item.key===index的物件，也就是自己
-	const toDoListString = JSON.stringify(toDoList.value);
-	localStorage.setItem('toDoList', toDoListString);
-};
-const edit = (item) => {
+//刪除資料
+const deleteItem = (item: ToDoItem) => localStorage.setItem('toDoList', JSON.stringify((toDoList.value = toDoList.value.filter((e) => e.key !== item.key))));
+//修改資料
+const edit = (item: ToDoItem) => {
+	if (item.edit && item.name === '') {
+		alert(i18n.global.t('failedToModify'));
+		return getList();
+	}
 	if (item.edit) {
-		if (item.name === '') {
-			let message = i18n.global.t('failedToModify');
-			alert(message);
-			getList();
-		} else {
-			item.edit = false;
-			const toDoListString = JSON.stringify(toDoList.value);
-			localStorage.setItem('toDoList', toDoListString);
-		}
+		item.edit = false;
+		localStorage.setItem('toDoList', JSON.stringify(toDoList.value));
 	} else {
-		toDoList.value.forEach((todo) => {
-			todo.edit = false;
-		});
+		toDoList.value.forEach((todo) => (todo.edit = false));
 		item.edit = true;
 	}
 };
-const handleInput = (item, event) => {
-	item.name = event.target.value;
-};
-const openChange = () => {
-	i18n.global.locale.value = langValue.value;
-};
+//變更語系
+const openChange = () => (i18n.global.locale.value = langValue.value as 'zh_TW' | 'en' | 'zh_CN');
+getList();
 </script>
 <style lang="scss" scoped>
 :where(.css-dev-only-do-not-override-1hsjdkk).ant-btn-default:not(:disabled):hover {
