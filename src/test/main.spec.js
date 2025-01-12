@@ -1,49 +1,56 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faTrash, faPenToSquare, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 import { mount } from '@vue/test-utils';
-import { nextTick } from 'vue';
 import { createApp } from 'vue';
 import App from '@/App.vue';
 
+const mockI18n = {
+	global: {
+		t: (key) => key // 简单的 mock，直接返回 key
+	}
+};
+// 添加 FontAwesome 图标
 library.add(faTrash, faPenToSquare, faFloppyDisk);
 
 describe('main.js', () => {
-  let appElement;
+	let appElement;
+	beforeEach(() => {
+		// 在每个测试开始之前，创建并插入具有 #app ID 的 DOM 元素
+		appElement = document.createElement('div');
+		appElement.id = 'app';
+		document.body.appendChild(appElement);
+	});
+	afterEach(() => {
+		// 测试结束后清理 DOM
+		document.body.removeChild(appElement);
+	});
+	describe('App Component', () => {
 
-  beforeEach(() => {
-    // 在每個測試開始之前手動創建一個具有 #app ID 的元素
-    appElement = document.createElement('div');
-    appElement.id = 'app';
-    document.body.appendChild(appElement);
-  });
+		it('creates an app instance', () => {
+			const app = createApp(App);
+			expect(app).toBeDefined(); // 验证 app 不是 undefined
+			expect(app._component).toStrictEqual(App); // 验证 app 的根组件是 App
+		});
 
-  describe('App', () => {
-    it('creates an app instance', () => {
-      const app = createApp(App);
-      console.log(app)
-      expect(app).toBeDefined(); // 驗證 app 不是 undefined
-      expect(app._component).toStrictEqual(App); // 驗證 app 的根元件是你的 App 元件
-    });
-  });
+		it('adds expected icons to FontAwesome library', () => {
+			const definedIcons = Object.keys(library.definitions.fas);
+			expect(definedIcons).toContain('trash');
+			expect(definedIcons).toContain('pen-to-square');
+			expect(definedIcons).toContain('floppy-disk');
+		});
 
-  it('adds expected icons to FontAwesome library', () => {
-    const definedIcons = Object.keys(library.definitions.fas);
-    expect(definedIcons.some((icon) => icon.startsWith('trash'))).toBe(true);
-    expect(definedIcons.some((icon) => icon.startsWith('pen-to-square'))).toBe(true);
-    expect(definedIcons.some((icon) => icon.startsWith('floppy-disk'))).toBe(true);
-  });
-
-  it('mounts the App component to #app', async () => {
-    // 現在創建 Vue 應用程式並挂載到剛剛創建的元素中
-    const app = createApp(App);
-    app.mount('#app');
-
-    // 等待 Vue 應用程式挂載完成
-    await nextTick();
-
-    // 測試挂載是否成功
-    const wrapper = mount(App);
-    expect(wrapper.find('#app')).toBeTruthy();
-  });
+		it('mounts the App component to #app', async () => {
+			const wrapper = mount(App, {
+				global: {
+					config: {
+						globalProperties: {
+							$t: mockI18n.global.t
+						}
+					}
+				}
+			});
+			expect(wrapper.exists()).toBe(true); // 验证组件已挂载
+		});
+	});
 });

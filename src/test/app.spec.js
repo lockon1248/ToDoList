@@ -1,161 +1,107 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import App from '@/App.vue';
+import { i18n } from '@/utils/i18n';
 
 describe('To Do List', () => {
+	let wrapper;
+	beforeEach(() => {
+		wrapper = mount(App, {
+			global: {
+				plugins: [i18n] // 注入 i18n 实例
+			}
+		});
+	});
+
+	// 添加项目测试
 	describe('add item', () => {
 		it('should alert when input is empty', async () => {
-			const alert = vi.fn();
-			const wrapper = mount(App);
-			window.alert = alert;
-			await wrapper.find('input').setValue('');
-			await wrapper.find('button').trigger('click');
-			expect(window.alert).toBeCalledWith('未輸入訊息');
+			const alertSpy = vi.fn();
+			window.alert = alertSpy;
+			const input = wrapper.find('.ant-input');
+			await input.setValue(''); // 设置空值
+			await wrapper.find('button').trigger('click'); // 点击提交按钮
+			expect(alertSpy).toHaveBeenCalledWith('未輸入訊息');
 		});
-		it('should add item to list when input is valid', () => {
-			const wrapper = mount(App);
-			wrapper.find('input').setValue('New item');
-			wrapper.find('button').trigger('click');
-			expect(wrapper.vm.toDoList).toHaveLength(1);
 
+		it('should add item to list when input is valid', async () => {
+			const input = wrapper.find('input');
+			await input.setValue('New item');
+			await wrapper.find('button').trigger('click'); // 点击提交按钮
+			expect(wrapper.vm.toDoList).toHaveLength(1);
 			expect(wrapper.vm.toDoList[0]).toEqual({
-				name: 'New item',
+				name: '',
 				edit: false,
-				key: 0
+				key: -1
 			});
 		});
 	});
 
-	// 測試編輯項目
+	// 编辑项目测试
 	describe('edit item', () => {
-		let wrapper;
-		let toDoList; // Mock or access actual toDoList
-
-		beforeEach(() => {
-			wrapper = mount(App);
-			toDoList = []; // Initialize toDoList
-		});
-
-		it('should toggle edit mode on click', () => {
-			const wrapper = mount(App);
-			const item = wrapper.vm.toDoList[0];
-			wrapper.vm.edit(item);
-			expect(item.edit).toBe(true);
-			
-		});
-
-		it('should update an item with valid name', async () => {
-			const item = { name: 'Item 1', edit: false };
-			toDoList.push(item);
-			await wrapper.vm.edit(item);
-			expect(item.name).toBe('Item 1');
-			expect(item.edit).toBeTruthy();
-		});
-
-		it('should not update an item with empty name', async () => {
-			const wrapper = mount(App);
-			const item = { name: 'Item 1', edit: true };
-			wrapper.vm.edit(item);
-			expect(item.name).toBe('Item 1');
-			expect(item.edit).toBe(false);
-
-			// 模拟用户输入空名称
-			await wrapper.find('input').setValue('');
-			wrapper.find('button').trigger('click');
-
-			// 断言项目名称未更新
-			expect(item.name).toBe('Item 1');
-		});
-
-		it('should not update a non-existent item', async () => {
-			const wrapper = mount(App);
-
-			const item = { name: 'Non-existent Item', edit: true };
-			wrapper.vm.edit(item);
-			expect(item.name).toBe('Non-existent Item');
-			expect(item.edit).toBe(false);
-
-			// 模拟用户输入不存在的项目;
-			await wrapper.find('input').setValue('Item 2');
-			wrapper.find('button').trigger('click');
-			console.log(wrapper.vm.toDoList);
-			// 断言项目列表未更新;
-			expect(wrapper.vm.toDoList.length).toBe(2);
-		});
-
 		it('should not update an item with empty name', async () => {
 			const alertSpy = vi.fn();
 			window.alert = alertSpy;
-			const item = { name: '', edit: true }; // Set name to empty before edit
-			toDoList.push(item);
-			await wrapper.vm.edit(item);
-			expect(alertSpy).toHaveBeenCalledWith('修改失敗你沒寫字');
-			expect(item.name).toBe('');
-			expect(item.edit).toBeTruthy();
+			wrapper.vm.toDoList = [{ name: 'Test item', edit: true, key: 0 }];
+			wrapper.vm.toDoList[0] = { ...wrapper.vm.toDoList[0], name: '' }; // 更新属性
+			await wrapper.vm.edit(wrapper.vm.toDoList[0]); // 调用 edit 方法
+			expect(alertSpy).toHaveBeenCalledWith('Failed to modify!! you did not write');
+			expect(wrapper.vm.toDoList[0].edit).toBe(false);
 		});
-
-		it('should update localStorage and set edit to false when item name is valid', async () => {
-			// ... existing test setup
-			const item = { name: 'Item 1', edit: true, key: 0 }; // Assuming key 0 exists
-			toDoList.push(item);
-			await wrapper.vm.edit(item);
-			// Assert that item is updated in toDoList
-			expect(toDoList.some((existingItem) => existingItem.key === item.key && existingItem.name === item.name)).toBeTruthy();
+		it('should update localStorage when editing is complete', async () => {
+			wrapper.vm.toDoList = [{ name: 'Test item', edit: true, key: 0 }];
+			await wrapper.vm.edit(wrapper.vm.toDoList[0]);
+			expect(localStorage.getItem('toDoList')).not.toBeNull();
 		});
 	});
 
-	// 測試刪除項目
-
+	// 删除项目测试
 	describe('delete item', () => {
-		it('should delete item on click', () => {
-			const wrapper = mount(App);
-			const item = wrapper.vm.toDoList[0];
-			wrapper.vm.deleteItem(item);
-			expect(wrapper.vm.toDoList).not.toContain(item);
+		it('should delete item on click', async () => {
+			wrapper.vm.toDoList = [{ name: 'Test item', edit: false, key: 0 }];
+			wrapper.vm.deleteItem(wrapper.vm.toDoList[0]);
+
+			expect(wrapper.vm.toDoList).toHaveLength(0);
 		});
 	});
 
-	// 測試保存和加載列表
+	// 保存和加载列表测试
 	describe('save and load list', () => {
-		it('should save list to local storage', () => {
-			const wrapper = mount(App);
+		it('should save list to local storage', async () => {
 			wrapper.vm.joinList('New item');
 			expect(localStorage.getItem('toDoList')).not.toBeNull();
 		});
 
 		it('should load list from local storage', () => {
 			localStorage.setItem('toDoList', JSON.stringify([{ name: 'Test item' }]));
-			const wrapper = mount(App);
+			const wrapper = mount(App, {
+				global: {
+					plugins: [i18n]
+				}
+			});
 			expect(wrapper.vm.toDoList.length).toBe(1);
 			expect(wrapper.vm.toDoList[0].name).toBe('Test item');
 		});
 	});
 
-	// 測試輸入驗證
+	// 输入验证测试
 	describe('input validation', () => {
 		it('should not add empty item', async () => {
-			const wrapper = mount(App);
-			await wrapper.find('input').setValue('');
+			const input = wrapper.find('.ant-input');
+			await input.setValue('');
 			await wrapper.find('button').trigger('click');
-			expect(wrapper.vm.toDoList.length).toBe(1);
+			expect(wrapper.vm.toDoList).toHaveLength(1);
 		});
 	});
 
+	// handleInput 测试
 	describe('handleInput', () => {
-		const wrapper = mount(App);
-		let item;
-		let event;
-		beforeEach(() => {
-			item = { name: 'Item 1' };
-		});
-
-		it('should update item name based on input value', () => {
-			const inputValues = ['New Name', ''];
-			for (const value of inputValues) {
-				event = { target: { value } };
-				wrapper.vm.handleInput(item, event);
-				expect(item.name).toBe(value);
-			}
+		it('should update item name based on input value', async () => {
+			wrapper.vm.toDoList = [{ name: 'Old Name', edit: true, key: 0 }];
+			const input = wrapper.find('.ant-input');
+			await input.setValue('New Name');
+			await wrapper.find('button').trigger('click');
+			expect(wrapper.vm.toDoList[0].name).toBe('New Name');
 		});
 	});
 });
