@@ -12,7 +12,6 @@ describe('To Do List', () => {
 			}
 		});
 	});
-
 	// 添加项目测试
 	describe('add item', () => {
 		it('should alert when input is empty', async () => {
@@ -23,7 +22,6 @@ describe('To Do List', () => {
 			await wrapper.find('button').trigger('click'); // 点击提交按钮
 			expect(alertSpy).toHaveBeenCalledWith('未輸入訊息');
 		});
-
 		it('should add item to list when input is valid', async () => {
 			const input = wrapper.find('input');
 			await input.setValue('New item');
