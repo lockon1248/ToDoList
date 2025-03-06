@@ -1,4 +1,4 @@
-@import './src/assets/styles/base.css';
+@import "@/assets/styles/base.css"; /* 需要在 `vite.config.ts` 里配置 `@` */
 /* @tailwind base; */
 @tailwind components;
 @tailwind utilities;
